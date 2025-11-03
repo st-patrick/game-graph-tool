@@ -166,7 +166,12 @@
     #nodesLayer {
       position: absolute;
       inset: 0;
-      pointer-events: none; /* individual nodes re-enable this */
+      pointer-events: none;
+    }
+
+    #nodesLayer,
+    #edgesSvg {
+      transform-origin: 0 0;
     }
 
     .node {
@@ -244,6 +249,18 @@
       word-wrap: break-word;
     }
 
+    .node-title {
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 0.15rem;
+      color: #e5e7eb;
+    }
+
+    .node-fulltext {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
     .edge-line {
       stroke: var(--edge);
       stroke-width: 2;
@@ -284,7 +301,14 @@
       cursor: crosshair;
     }
 
-    /* Modal for export/import (hidden unless hotkey is used) */
+    #resetZoomBtn {
+      margin-left: auto;
+      font-size: 0.7rem;
+      padding: 0.1rem 0.5rem;
+      line-height: 1;
+    }
+
+    /* Modal for import (hotkey only) */
 
     #modalOverlay {
       position: fixed;
@@ -370,7 +394,7 @@
 
     <span style="width:1px;height:20px;background:#111827;margin:0 0.5rem;"></span>
 
-    <input id="nodeTextInput" type="text" placeholder="New event (optional text)" />
+    <input id="nodeTextInput" type="text" placeholder="New event title" />
     <button id="addNodeBtn" class="btn-primary" title="Add a new event node">
       + Add node
     </button>
@@ -386,7 +410,7 @@
     <div class="spacer"></div>
 
     <span id="hintText" style="font-size:0.75rem;color:var(--text-muted);">
-      Drag nodes, double-click text to edit, connect in “Connect” mode.
+      Drag nodes, double-click to edit title & fulltext, connect in “Connect” mode.
     </span>
   </div>
 
@@ -400,9 +424,10 @@
     <span id="statusView"></span>
     <span id="statusCounts"></span>
     <span id="statusMode"></span>
+    <button id="resetZoomBtn" title="Reset zoom and pan to 100%">100%</button>
   </div>
 
-  <!-- Hidden modal for export/import (triggered via hotkeys only) -->
+  <!-- Import modal (hidden, hotkey only) -->
   <div id="modalOverlay">
     <div id="modal">
       <div id="modalHeader">
@@ -420,6 +445,7 @@
   <script>
     (function () {
       const STORAGE_KEY = "rpg_graph_tool_v1";
+      const GRID_WORLD_SIZE = 80; // world units per grid square
 
       function createDefaultState() {
         const base = {
@@ -473,7 +499,17 @@
           s.nodes.forEach(function (n) {
             if (!n.positions || typeof n.positions !== "object") n.positions = {};
             if (!n.type) n.type = "event";
-            if (typeof n.text !== "string") n.text = "";
+            if (typeof n.title !== "string") n.title = "";
+            if (typeof n.fulltext !== "string") n.fulltext = "";
+            // Backwards compat: map legacy text field into title/fulltext
+            if (!n.title && !n.fulltext && typeof n.text === "string" && n.text) {
+              if (n.text.length > 80 || n.text.indexOf("\n") !== -1) {
+                n.fulltext = n.text;
+                n.title = n.text.slice(0, 60).replace(/\s+$/,"") + (n.text.length > 60 ? "…" : "");
+              } else {
+                n.title = n.text;
+              }
+            }
           });
           return s;
         } catch (e) {
@@ -509,10 +545,12 @@
       const canvasWrapper = document.getElementById("canvasWrapper");
       const nodesLayer = document.getElementById("nodesLayer");
       const edgesSvg = document.getElementById("edgesSvg");
+      const canvasGrid = document.getElementById("canvasGrid");
       const statusView = document.getElementById("statusView");
       const statusCounts = document.getElementById("statusCounts");
       const statusMode = document.getElementById("statusMode");
       const hintText = document.getElementById("hintText");
+      const resetZoomBtn = document.getElementById("resetZoomBtn");
 
       const modalOverlay = document.getElementById("modalOverlay");
       const modalTitle = document.getElementById("modalTitle");
@@ -520,7 +558,7 @@
       const modalTextarea = document.getElementById("modalTextarea");
       const modalPrimaryBtn = document.getElementById("modalPrimaryBtn");
       const modalSecondaryBtn = document.getElementById("modalSecondaryBtn");
-      let modalMode = null; // "export" | "import"
+      let modalMode = null; // currently only "import"
 
       function getViewById(id) {
         return state.views.find(function (v) { return v.id === id; }) || null;
@@ -543,20 +581,31 @@
         return vt;
       }
 
-      function worldToScreen(x, y, viewIdOpt) {
-        const vt = getViewTransform(viewIdOpt);
-        return {
-          x: x * vt.scale + vt.offsetX,
-          y: y * vt.scale + vt.offsetY
-        };
-      }
-
       function screenToWorld(x, y, viewIdOpt) {
         const vt = getViewTransform(viewIdOpt);
         return {
           x: (x - vt.offsetX) / vt.scale,
           y: (y - vt.offsetY) / vt.scale
         };
+      }
+
+      function applyViewTransform() {
+        const vt = getViewTransform();
+        const t = "translate(" + vt.offsetX + "px," + vt.offsetY + "px) scale(" + vt.scale + ")";
+        nodesLayer.style.transform = t;
+        edgesSvg.style.transform = t;
+        updateGrid();
+      }
+
+      function updateGrid() {
+        const vt = getViewTransform();
+        let size = GRID_WORLD_SIZE * vt.scale;
+        if (size < 2) size = 2;
+        canvasGrid.style.backgroundSize = size + "px " + size + "px";
+
+        const offsetX = ((vt.offsetX % size) + size) % size;
+        const offsetY = ((vt.offsetY % size) + size) % size;
+        canvasGrid.style.backgroundPosition = offsetX + "px " + offsetY + "px";
       }
 
       function ensurePositionsForCurrentView() {
@@ -622,7 +671,7 @@
           canvasWrapper.classList.add("connect-mode");
         } else {
           connectModeBtn.classList.remove("active");
-          hintText.textContent = "Drag nodes, double-click text to edit, connect in “Connect” mode.";
+          hintText.textContent = "Drag nodes, double-click to edit title & fulltext, connect in “Connect” mode.";
           canvasWrapper.classList.remove("connect-mode");
         }
         updateStatusBar();
@@ -747,15 +796,8 @@
         if (!pos) return;
         var el = nodeElementsById.get(node.id);
         if (!el) return;
-        var screen = worldToScreen(pos.x, pos.y);
-        el.style.left = screen.x + "px";
-        el.style.top = screen.y + "px";
-      }
-
-      function updateAllNodeScreenPositions() {
-        state.nodes.forEach(function (node) {
-          positionNodeElement(node);
-        });
+        el.style.left = pos.x + "px";
+        el.style.top = pos.y + "px";
       }
 
       function attachNodeEvents(nodeElement, node) {
@@ -789,12 +831,14 @@
 
         nodeElement.addEventListener("dblclick", function (e) {
           e.stopPropagation();
-          var newText = window.prompt("Edit node text:", node.text || "");
-          if (newText !== null) {
-            node.text = newText;
-            saveState();
-            render();
-          }
+          var newTitle = window.prompt("Edit node title:", node.title || "");
+          if (newTitle === null) return;
+          var newFull = window.prompt("Edit node full text:", node.fulltext || "");
+          if (newFull === null) return;
+          node.title = newTitle;
+          node.fulltext = newFull;
+          saveState();
+          render();
         });
 
         nodeElement.addEventListener("contextmenu", function (e) {
@@ -864,29 +908,17 @@
         render();
       }
 
-      function openModal(mode) {
-        modalMode = mode;
-        if (mode === "export") {
-          modalTitle.textContent = "Export data";
-          modalDescription.textContent =
-            "Copy this JSON somewhere safe. On another device, use the import shortcut to restore.";
-          modalPrimaryBtn.textContent = "Copy to clipboard";
-          modalTextarea.value = JSON.stringify(state, null, 2);
-          setTimeout(function () {
-            modalTextarea.focus();
-            modalTextarea.select();
-          }, 0);
-        } else if (mode === "import") {
-          modalTitle.textContent = "Import data";
-          modalDescription.textContent =
-            "Paste previously exported JSON and click Import. This will overwrite current data.";
-          modalPrimaryBtn.textContent = "Import";
-          modalTextarea.value = "";
-          setTimeout(function () {
-            modalTextarea.focus();
-          }, 0);
-        }
+      function openImportModal() {
+        modalMode = "import";
+        modalTitle.textContent = "Import data";
+        modalDescription.textContent =
+          "Paste previously exported JSON and click Import. This will overwrite current data.";
+        modalPrimaryBtn.textContent = "Import";
+        modalTextarea.value = "";
         modalOverlay.classList.add("visible");
+        setTimeout(function () {
+          modalTextarea.focus();
+        }, 0);
       }
 
       function closeModal() {
@@ -906,54 +938,61 @@
       });
 
       modalPrimaryBtn.addEventListener("click", function () {
-        if (modalMode === "export") {
-          if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(modalTextarea.value).catch(function (err) {
-              console.warn("Clipboard copy failed", err);
-            });
-          } else {
-            modalTextarea.select();
-          }
+        if (modalMode !== "import") return;
+        var text = modalTextarea.value.trim();
+        if (!text) {
+          alert("Paste some JSON first.");
+          return;
+        }
+        try {
+          JSON.parse(text);
+        } catch (e) {
+          alert("Invalid JSON: " + e.message);
+          return;
+        }
+        try {
+          localStorage.setItem(STORAGE_KEY, text);
+          state = loadState();
+          selectedNodeId = null;
+          pendingFromId = null;
+          nodeElementsById.clear();
+          rebuildViewOptions();
+          ensurePositionsForCurrentView();
+          saveState();
+          render();
           closeModal();
-        } else if (modalMode === "import") {
-          var text = modalTextarea.value.trim();
-          if (!text) {
-            alert("Paste some JSON first.");
-            return;
-          }
-          try {
-            JSON.parse(text);
-          } catch (e) {
-            alert("Invalid JSON: " + e.message);
-            return;
-          }
-          try {
-            localStorage.setItem(STORAGE_KEY, text);
-            state = loadState();
-            selectedNodeId = null;
-            pendingFromId = null;
-            nodeElementsById.clear();
-            rebuildViewOptions();
-            ensurePositionsForCurrentView();
-            saveState();
-            render();
-            closeModal();
-          } catch (e) {
-            alert("Import failed: " + e.message);
-          }
+        } catch (e) {
+          alert("Import failed: " + e.message);
         }
       });
 
+      function downloadJson() {
+        const data = JSON.stringify(state, null, 2);
+        const blob = new Blob([data], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const date = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = "rpg_graph_" + date + ".json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      // Hotkeys
       window.addEventListener("keydown", function (e) {
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-          var tag = (e.target && e.target.tagName) || "";
+          const tag = (e.target && e.target.tagName) || "";
           if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
           if (e.code === "KeyE") {
+            // Export: direct download
             e.preventDefault();
-            openModal("export");
+            downloadJson();
           } else if (e.code === "KeyI") {
+            // Import: modal
             e.preventDefault();
-            openModal("import");
+            openImportModal();
           }
         } else if (e.key === "Escape" && modalOverlay.classList.contains("visible")) {
           e.preventDefault();
@@ -981,7 +1020,6 @@
         state.views.push({ id: id, name: name });
         cloneLayoutToNewView(currentViewId, id);
 
-        // clone current view transform into the new view
         var vt = getViewTransform(currentViewId);
         state.viewTransforms[id] = {
           scale: vt.scale,
@@ -998,17 +1036,16 @@
       });
 
       addNodeBtn.addEventListener("click", function () {
-        var text = nodeTextInput.value;
-        if (!text || !text.trim()) {
-          text = "Event " + state.nextNodeId;
-        } else {
-          text = text;
+        var title = nodeTextInput.value;
+        if (!title || !title.trim()) {
+          title = "Event " + state.nextNodeId;
         }
 
         var node = {
           id: state.nextNodeId++,
           type: "event",
-          text: text,
+          title: title,
+          fulltext: "",
           positions: {}
         };
 
@@ -1052,15 +1089,14 @@
         render();
       });
 
-      // Panning
+      // Panning via mouse drag on background
       function onPanMouseMove(e) {
         if (!isPanning || !panInfo) return;
         e.preventDefault();
         var vt = getViewTransform();
         vt.offsetX = panInfo.startOffsetX + (e.clientX - panInfo.startClientX);
         vt.offsetY = panInfo.startOffsetY + (e.clientY - panInfo.startClientY);
-        updateAllNodeScreenPositions();
-        updateEdges();
+        applyViewTransform();
       }
 
       function onPanMouseUp(e) {
@@ -1075,7 +1111,7 @@
 
       canvasWrapper.addEventListener("mousedown", function (e) {
         if (e.button !== 0) return;
-        if (e.target.closest(".node")) return; // node dragging handled separately
+        if (e.target.closest(".node")) return;
         e.preventDefault();
         isPanning = true;
         var vt = getViewTransform();
@@ -1089,41 +1125,60 @@
         document.addEventListener("mouseup", onPanMouseUp);
       });
 
-      // Zoom (wheel)
+      // Wheel: pan by default, zoom only with Ctrl/Cmd
       canvasWrapper.addEventListener("wheel", function (e) {
         e.preventDefault();
-        var rect = canvasWrapper.getBoundingClientRect();
-        var mouseX = e.clientX - rect.left;
-        var mouseY = e.clientY - rect.top;
         var vt = getViewTransform();
-        var worldBefore = screenToWorld(mouseX, mouseY);
 
-        var delta = e.deltaY;
-        var zoomFactor = delta < 0 ? 1.1 : 0.9;
-        var newScale = vt.scale * zoomFactor;
-        var minScale = 0.25;
-        var maxScale = 6;
-        if (newScale < minScale) newScale = minScale;
-        if (newScale > maxScale) newScale = maxScale;
+        if (e.ctrlKey || e.metaKey) {
+          var rect = canvasWrapper.getBoundingClientRect();
+          var mouseX = e.clientX - rect.left;
+          var mouseY = e.clientY - rect.top;
+          var worldBefore = screenToWorld(mouseX, mouseY);
 
-        vt.scale = newScale;
-        vt.offsetX = mouseX - worldBefore.x * newScale;
-        vt.offsetY = mouseY - worldBefore.y * newScale;
+          var delta = e.deltaY;
+          var zoomFactor = delta < 0 ? 1.1 : 0.9;
+          var newScale = vt.scale * zoomFactor;
+          var minScale = 0.1;
+          var maxScale = 2.0;
+          if (newScale < minScale) newScale = minScale;
+          if (newScale > maxScale) newScale = maxScale;
 
-        updateAllNodeScreenPositions();
-        updateEdges();
+          vt.scale = newScale;
+          vt.offsetX = mouseX - worldBefore.x * newScale;
+          vt.offsetY = mouseY - worldBefore.y * newScale;
+
+          applyViewTransform();
+          saveState();
+          updateStatusBar();
+        } else {
+          vt.offsetX -= e.deltaX;
+          vt.offsetY -= e.deltaY;
+          applyViewTransform();
+          saveState();
+          updateStatusBar();
+        }
+      }, { passive: false });
+
+      // Reset zoom button
+      resetZoomBtn.addEventListener("click", function () {
+        var vt = getViewTransform();
+        vt.scale = 1;
+        vt.offsetX = 0;
+        vt.offsetY = 0;
+        applyViewTransform();
         saveState();
         updateStatusBar();
-      }, { passive: false });
+      });
 
       window.addEventListener("resize", function () {
         window.requestAnimationFrame(function () {
-          updateAllNodeScreenPositions();
           updateEdges();
+          updateGrid();
         });
       });
 
-      // --- Initial boot ---
+      // Initial boot
       rebuildViewOptions();
       ensurePositionsForCurrentView();
       saveState();
@@ -1167,15 +1222,28 @@
 
           var body = document.createElement("div");
           body.className = "node-body";
-          var fullText = node.text || "(empty event)";
+
+          var titleText = (node.title && node.title.trim()) ? node.title : "(untitled)";
+          var fullText = node.fulltext || "";
+
+          var titleEl = document.createElement("div");
+          titleEl.className = "node-title";
+          titleEl.textContent = titleText;
+
+          var fullEl = document.createElement("div");
+          fullEl.className = "node-fulltext";
           var snippet = fullText.length > 150
             ? fullText.slice(0, 147) + "…"
             : fullText;
-          body.textContent = snippet;
+          fullEl.textContent = snippet;
+
+          body.appendChild(titleEl);
+          if (snippet) body.appendChild(fullEl);
 
           nodeEl.appendChild(header);
           nodeEl.appendChild(body);
-          nodeEl.title = fullText;
+
+          nodeEl.title = titleText + (fullText ? "\n\n" + fullText : "");
 
           nodesLayer.appendChild(nodeEl);
 
@@ -1184,6 +1252,7 @@
           positionNodeElement(node);
         });
 
+        applyViewTransform();
         window.requestAnimationFrame(updateEdges);
         updateStatusBar();
       }

@@ -96,12 +96,27 @@
       "text": "the bar: your first step to main quest",
       "positions": {
         "story": {
-          "x": 612,
-          "y": 375
+          "x": 597,
+          "y": 358
         },
         "map": {
           "x": 612.4559118002554,
           "y": 1165.0747359287777
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "event",
+      "text": "talk to the barkeeper",
+      "positions": {
+        "story": {
+          "x": 641,
+          "y": 439
+        },
+        "map": {
+          "x": 441.7134583499976,
+          "y": 1073.6410938473182
         }
       }
     }
@@ -154,6 +169,12 @@
       "from": 6,
       "to": 7,
       "type": "sequence"
+    },
+    {
+      "id": "e_7_8_m2lnb",
+      "from": 7,
+      "to": 8,
+      "type": "sequence"
     }
   ],
   "views": [
@@ -167,17 +188,17 @@
     }
   ],
   "currentViewId": "story",
-  "nextNodeId": 8,
+  "nextNodeId": 9,
   "viewTransforms": {
     "story": {
-      "scale": 1.0305675474093552,
-      "offsetX": -76.83510020602495,
-      "offsetY": -45.193321080137
+      "scale": 1,
+      "offsetX": -44,
+      "offsetY": -49
     },
     "map": {
       "scale": 0.5894869227500005,
-      "offsetX": 200.27041739183687,
-      "offsetY": -54.439200512828734
+      "offsetX": 231.27041739183687,
+      "offsetY": -29.439200512828734
     }
   }
 }
