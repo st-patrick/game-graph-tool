@@ -140,7 +140,7 @@
     #canvasWrapper {
       position: relative;
       flex: 1;
-      overflow: hidden;
+      overflow: hidden; /* clips the huge world plane */
       background: radial-gradient(circle at top, #020617 0, #020617 45%, #020617 100%);
       cursor: default;
     }
@@ -156,16 +156,23 @@
       pointer-events: none;
     }
 
+    /* HUGE world plane for nodes & edges so we don't hit edges in practice */
     #edgesSvg {
       position: absolute;
-      inset: 0;
+      left: 0;
+      top: 0;
+      width: 100000px;
+      height: 100000px;
       pointer-events: none;
       overflow: visible;
     }
 
     #nodesLayer {
       position: absolute;
-      inset: 0;
+      left: 0;
+      top: 0;
+      width: 100000px;
+      height: 100000px;
       pointer-events: none;
     }
 
@@ -308,8 +315,6 @@
       line-height: 1;
     }
 
-    /* Modal for import (hotkey only) */
-
     #modalOverlay {
       position: fixed;
       inset: 0;
@@ -427,7 +432,6 @@
     <button id="resetZoomBtn" title="Reset zoom and pan to 100%">100%</button>
   </div>
 
-  <!-- Import modal (hidden, hotkey only) -->
   <div id="modalOverlay">
     <div id="modal">
       <div id="modalHeader">
@@ -445,7 +449,7 @@
   <script>
     (function () {
       const STORAGE_KEY = "rpg_graph_tool_v1";
-      const GRID_WORLD_SIZE = 80; // world units per grid square
+      const GRID_WORLD_SIZE = 80;
 
       function createDefaultState() {
         const base = {
@@ -459,7 +463,7 @@
           nextNodeId: 1,
           viewTransforms: {}
         };
-        base.views.forEach(function (v) {
+        base.views.forEach(v => {
           base.viewTransforms[v.id] = { scale: 1, offsetX: 0, offsetY: 0 };
         });
         return base;
@@ -471,7 +475,6 @@
           if (!raw) return createDefaultState();
           const parsed = JSON.parse(raw);
           const defaults = createDefaultState();
-
           const s = Object.assign({}, defaults, parsed);
 
           if (!Array.isArray(s.nodes)) s.nodes = [];
@@ -479,38 +482,42 @@
           if (!Array.isArray(s.views) || s.views.length === 0) {
             s.views = defaults.views;
           }
-          if (!s.currentViewId) {
-            s.currentViewId = s.views[0].id;
-          }
+          if (!s.currentViewId) s.currentViewId = s.views[0].id;
+
           if (!s.nextNodeId) {
-            const maxId = s.nodes.reduce(function (max, n) {
-              return typeof n.id === "number" && n.id > max ? n.id : max;
-            }, 0);
+            const maxId = s.nodes.reduce(
+              (max, n) => typeof n.id === "number" && n.id > max ? n.id : max,
+              0
+            );
             s.nextNodeId = maxId + 1;
           }
+
           if (!s.viewTransforms || typeof s.viewTransforms !== "object") {
             s.viewTransforms = {};
           }
-          s.views.forEach(function (v) {
+          s.views.forEach(v => {
             if (!s.viewTransforms[v.id]) {
               s.viewTransforms[v.id] = { scale: 1, offsetX: 0, offsetY: 0 };
             }
           });
-          s.nodes.forEach(function (n) {
+
+          s.nodes.forEach(n => {
             if (!n.positions || typeof n.positions !== "object") n.positions = {};
             if (!n.type) n.type = "event";
             if (typeof n.title !== "string") n.title = "";
             if (typeof n.fulltext !== "string") n.fulltext = "";
-            // Backwards compat: map legacy text field into title/fulltext
             if (!n.title && !n.fulltext && typeof n.text === "string" && n.text) {
               if (n.text.length > 80 || n.text.indexOf("\n") !== -1) {
                 n.fulltext = n.text;
-                n.title = n.text.slice(0, 60).replace(/\s+$/,"") + (n.text.length > 60 ? "…" : "");
+                n.title =
+                  n.text.slice(0, 60).replace(/\s+$/, "") +
+                  (n.text.length > 60 ? "…" : "");
               } else {
                 n.title = n.text;
               }
             }
           });
+
           return s;
         } catch (e) {
           console.error("Failed to load state, resetting:", e);
@@ -549,7 +556,6 @@
       const statusView = document.getElementById("statusView");
       const statusCounts = document.getElementById("statusCounts");
       const statusMode = document.getElementById("statusMode");
-      const hintText = document.getElementById("hintText");
       const resetZoomBtn = document.getElementById("resetZoomBtn");
 
       const modalOverlay = document.getElementById("modalOverlay");
@@ -558,14 +564,14 @@
       const modalTextarea = document.getElementById("modalTextarea");
       const modalPrimaryBtn = document.getElementById("modalPrimaryBtn");
       const modalSecondaryBtn = document.getElementById("modalSecondaryBtn");
-      let modalMode = null; // currently only "import"
+      let modalMode = null;
 
       function getViewById(id) {
-        return state.views.find(function (v) { return v.id === id; }) || null;
+        return state.views.find(v => v.id === id) || null;
       }
 
       function getNodeById(id) {
-        return state.nodes.find(function (n) { return n.id === id; }) || null;
+        return state.nodes.find(n => n.id === id) || null;
       }
 
       function getViewTransform(viewIdOpt) {
@@ -591,7 +597,7 @@
 
       function applyViewTransform() {
         const vt = getViewTransform();
-        const t = "translate(" + vt.offsetX + "px," + vt.offsetY + "px) scale(" + vt.scale + ")";
+        const t = `translate(${vt.offsetX}px, ${vt.offsetY}px) scale(${vt.scale})`;
         nodesLayer.style.transform = t;
         edgesSvg.style.transform = t;
         updateGrid();
@@ -601,23 +607,21 @@
         const vt = getViewTransform();
         let size = GRID_WORLD_SIZE * vt.scale;
         if (size < 2) size = 2;
-        canvasGrid.style.backgroundSize = size + "px " + size + "px";
+        canvasGrid.style.backgroundSize = `${size}px ${size}px`;
 
         const offsetX = ((vt.offsetX % size) + size) % size;
         const offsetY = ((vt.offsetY % size) + size) % size;
-        canvasGrid.style.backgroundPosition = offsetX + "px " + offsetY + "px";
+        canvasGrid.style.backgroundPosition = `${offsetX}px ${offsetY}px`;
       }
 
       function ensurePositionsForCurrentView() {
         const viewId = state.currentViewId;
-        state.nodes.forEach(function (node, index) {
+        state.nodes.forEach((node, index) => {
           if (!node.positions) node.positions = {};
           if (!node.positions[viewId]) {
             let fallbackPos = null;
             const viewIds = Object.keys(node.positions);
-            if (viewIds.length > 0) {
-              fallbackPos = node.positions[viewIds[0]];
-            }
+            if (viewIds.length > 0) fallbackPos = node.positions[viewIds[0]];
             if (fallbackPos) {
               node.positions[viewId] = {
                 x: fallbackPos.x + 20,
@@ -634,7 +638,7 @@
       }
 
       function cloneLayoutToNewView(fromViewId, toViewId) {
-        state.nodes.forEach(function (node, index) {
+        state.nodes.forEach((node, index) => {
           if (!node.positions) node.positions = {};
           const fromPos = node.positions[fromViewId];
           if (fromPos) {
@@ -650,8 +654,8 @@
 
       function rebuildViewOptions() {
         viewSelect.innerHTML = "";
-        state.views.forEach(function (view) {
-          var opt = document.createElement("option");
+        state.views.forEach(view => {
+          const opt = document.createElement("option");
           opt.value = view.id;
           opt.textContent = view.name;
           viewSelect.appendChild(opt);
@@ -667,11 +671,9 @@
         pendingFromId = null;
         if (connectMode) {
           connectModeBtn.classList.add("active");
-          hintText.textContent = "Connect mode: click source node, then target node.";
           canvasWrapper.classList.add("connect-mode");
         } else {
           connectModeBtn.classList.remove("active");
-          hintText.textContent = "Drag nodes, double-click to edit title & fulltext, connect in “Connect” mode.";
           canvasWrapper.classList.remove("connect-mode");
         }
         updateStatusBar();
@@ -679,47 +681,30 @@
       }
 
       function updateStatusBar() {
-        var view = getViewById(state.currentViewId);
-        var vt = getViewTransform();
-        statusView.innerHTML =
-          "View: <strong>" +
-          (view ? view.name : "Unknown") +
-          "</strong>";
+        const view = getViewById(state.currentViewId);
+        const vt = getViewTransform();
+        statusView.innerHTML = `View: <strong>${view ? view.name : "Unknown"}</strong>`;
         statusCounts.textContent =
-          "Nodes: " + state.nodes.length +
-          " | Edges: " + state.edges.length +
-          " | Zoom: " + Math.round(vt.scale * 100) + "%";
-        var modeText = connectMode ? "Connect mode" : "Navigate / drag mode";
+          `Nodes: ${state.nodes.length} | Edges: ${state.edges.length} | Zoom: ${Math.round(vt.scale * 100)}%`;
+        const modeText = connectMode ? "Connect mode" : "Navigate / drag mode";
         statusMode.textContent =
-          "Mode: " +
-          modeText +
-          (selectedNodeId ? " | Selected node #" + selectedNodeId : "");
+          `Mode: ${modeText}${selectedNodeId ? " | Selected node #" + selectedNodeId : ""}`;
         deleteNodeBtn.disabled = !selectedNodeId;
       }
 
       function createEdge(fromId, toId) {
         if (!fromId || !toId || fromId === toId) return;
-        var exists = state.edges.some(function (e) {
-          return e.from === fromId && e.to === toId;
-        });
+        const exists = state.edges.some(e => e.from === fromId && e.to === toId);
         if (exists) return;
-        var edgeId =
-          "e_" + fromId + "_" + toId + "_" + Math.random().toString(36).slice(2, 7);
-        state.edges.push({
-          id: edgeId,
-          from: fromId,
-          to: toId,
-          type: "sequence"
-        });
+        const edgeId = `e_${fromId}_${toId}_${Math.random().toString(36).slice(2, 7)}`;
+        state.edges.push({ id: edgeId, from: fromId, to: toId, type: "sequence" });
       }
 
       function deleteSelectedNode() {
         if (!selectedNodeId) return;
-        var id = selectedNodeId;
-        state.nodes = state.nodes.filter(function (n) { return n.id !== id; });
-        state.edges = state.edges.filter(function (e) {
-          return e.from !== id && e.to !== id;
-        });
+        const id = selectedNodeId;
+        state.nodes = state.nodes.filter(n => n.id !== id);
+        state.edges = state.edges.filter(e => e.from !== id && e.to !== id);
         selectedNodeId = null;
         pendingFromId = null;
         saveState();
@@ -727,17 +712,15 @@
       }
 
       function clearSvg() {
-        while (edgesSvg.firstChild) {
-          edgesSvg.removeChild(edgesSvg.firstChild);
-        }
+        while (edgesSvg.firstChild) edgesSvg.removeChild(edgesSvg.firstChild);
       }
 
       function updateEdges() {
         clearSvg();
         if (state.edges.length === 0) return;
 
-        var defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-        var marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+        const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
         marker.setAttribute("id", "arrowhead");
         marker.setAttribute("markerWidth", "8");
         marker.setAttribute("markerHeight", "6");
@@ -746,10 +729,7 @@
         marker.setAttribute("orient", "auto");
         marker.setAttribute("markerUnits", "strokeWidth");
 
-        var markerPath = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "path"
-        );
+        const markerPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
         markerPath.setAttribute("d", "M0,0 L8,3 L0,6 z");
         markerPath.setAttribute("fill", "currentColor");
 
@@ -757,34 +737,25 @@
         defs.appendChild(marker);
         edgesSvg.appendChild(defs);
 
-        state.edges.forEach(function (edge) {
-          var fromEl = nodeElementsById.get(edge.from);
-          var toEl = nodeElementsById.get(edge.to);
+        state.edges.forEach(edge => {
+          const fromEl = nodeElementsById.get(edge.from);
+          const toEl = nodeElementsById.get(edge.to);
           if (!fromEl || !toEl) return;
 
-          var x1 = fromEl.offsetLeft + fromEl.offsetWidth / 2;
-          var y1 = fromEl.offsetTop + fromEl.offsetHeight / 2;
-          var x2 = toEl.offsetLeft + toEl.offsetWidth / 2;
-          var y2 = toEl.offsetTop + toEl.offsetHeight / 2;
+          const x1 = fromEl.offsetLeft + fromEl.offsetWidth / 2;
+          const y1 = fromEl.offsetTop + fromEl.offsetHeight / 2;
+          const x2 = toEl.offsetLeft + toEl.offsetWidth / 2;
+          const y2 = toEl.offsetTop + toEl.offsetHeight / 2;
 
-          var line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
           line.setAttribute("x1", String(x1));
           line.setAttribute("y1", String(y1));
           line.setAttribute("x2", String(x2));
           line.setAttribute("y2", String(y2));
           line.setAttribute("class", "edge-line");
-          line.setAttribute(
-            "stroke",
-            getComputedStyle(document.body).getPropertyValue("--edge") || "#6b7280"
-          );
-          line.setAttribute("marker-end", "url(#arrowhead)");
 
           if (selectedNodeId && (edge.from === selectedNodeId || edge.to === selectedNodeId)) {
             line.classList.add("highlight");
-            line.setAttribute(
-              "stroke",
-              getComputedStyle(document.body).getPropertyValue("--edge-highlight") || "#38bdf8"
-            );
           }
 
           edgesSvg.appendChild(line);
@@ -792,16 +763,16 @@
       }
 
       function positionNodeElement(node) {
-        var pos = node.positions[state.currentViewId];
+        const pos = node.positions[state.currentViewId];
         if (!pos) return;
-        var el = nodeElementsById.get(node.id);
+        const el = nodeElementsById.get(node.id);
         if (!el) return;
         el.style.left = pos.x + "px";
         el.style.top = pos.y + "px";
       }
 
       function attachNodeEvents(nodeElement, node) {
-        nodeElement.addEventListener("mousedown", function (e) {
+        nodeElement.addEventListener("mousedown", e => {
           if (e.button !== 0) return;
           e.preventDefault();
           e.stopPropagation();
@@ -810,7 +781,7 @@
           selectedNodeId = node.id;
           deleteNodeBtn.disabled = false;
 
-          var pos = node.positions[state.currentViewId];
+          const pos = node.positions[state.currentViewId];
           dragInfo = {
             nodeId: node.id,
             startClientX: e.clientX,
@@ -824,16 +795,16 @@
           updateStatusBar();
         });
 
-        nodeElement.addEventListener("click", function (e) {
+        nodeElement.addEventListener("click", e => {
           e.stopPropagation();
           handleNodePrimaryClick(node);
         });
 
-        nodeElement.addEventListener("dblclick", function (e) {
+        nodeElement.addEventListener("dblclick", e => {
           e.stopPropagation();
-          var newTitle = window.prompt("Edit node title:", node.title || "");
+          const newTitle = window.prompt("Edit node title:", node.title || "");
           if (newTitle === null) return;
-          var newFull = window.prompt("Edit node full text:", node.fulltext || "");
+          const newFull = window.prompt("Edit node full text:", node.fulltext || "");
           if (newFull === null) return;
           node.title = newTitle;
           node.fulltext = newFull;
@@ -841,7 +812,7 @@
           render();
         });
 
-        nodeElement.addEventListener("contextmenu", function (e) {
+        nodeElement.addEventListener("contextmenu", e => {
           e.preventDefault();
           e.stopPropagation();
           selectedNodeId = node.id;
@@ -856,22 +827,20 @@
       function onMouseMove(e) {
         if (!isDragging || !dragInfo) return;
         e.preventDefault();
-        var node = getNodeById(dragInfo.nodeId);
+        const node = getNodeById(dragInfo.nodeId);
         if (!node) return;
-        var pos = node.positions[state.currentViewId];
+        let pos = node.positions[state.currentViewId];
         if (!pos) {
           pos = { x: 0, y: 0 };
           node.positions[state.currentViewId] = pos;
         }
-        var vt = getViewTransform();
-        var dxScreen = e.clientX - dragInfo.startClientX;
-        var dyScreen = e.clientY - dragInfo.startClientY;
-        var newX = dragInfo.startWorldX + dxScreen / vt.scale;
-        var newY = dragInfo.startWorldY + dyScreen / vt.scale;
+        const vt = getViewTransform();
+        const dxScreen = e.clientX - dragInfo.startClientX;
+        const dyScreen = e.clientY - dragInfo.startClientY;
+        const newX = dragInfo.startWorldX + dxScreen / vt.scale;
+        const newY = dragInfo.startWorldY + dyScreen / vt.scale;
 
-        if (newX < 0) newX = 0;
-        if (newY < 0) newY = 0;
-
+        // allow negative coordinates, no clamping
         pos.x = newX;
         pos.y = newY;
 
@@ -916,9 +885,7 @@
         modalPrimaryBtn.textContent = "Import";
         modalTextarea.value = "";
         modalOverlay.classList.add("visible");
-        setTimeout(function () {
-          modalTextarea.focus();
-        }, 0);
+        setTimeout(() => modalTextarea.focus(), 0);
       }
 
       function closeModal() {
@@ -927,19 +894,14 @@
         modalTextarea.value = "";
       }
 
-      modalSecondaryBtn.addEventListener("click", function () {
-        closeModal();
+      modalSecondaryBtn.addEventListener("click", closeModal);
+      modalOverlay.addEventListener("click", e => {
+        if (e.target === modalOverlay) closeModal();
       });
 
-      modalOverlay.addEventListener("click", function (e) {
-        if (e.target === modalOverlay) {
-          closeModal();
-        }
-      });
-
-      modalPrimaryBtn.addEventListener("click", function () {
+      modalPrimaryBtn.addEventListener("click", () => {
         if (modalMode !== "import") return;
-        var text = modalTextarea.value.trim();
+        const text = modalTextarea.value.trim();
         if (!text) {
           alert("Paste some JSON first.");
           return;
@@ -980,17 +942,14 @@
         URL.revokeObjectURL(url);
       }
 
-      // Hotkeys
-      window.addEventListener("keydown", function (e) {
+      window.addEventListener("keydown", e => {
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           const tag = (e.target && e.target.tagName) || "";
           if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
           if (e.code === "KeyE") {
-            // Export: direct download
             e.preventDefault();
             downloadJson();
           } else if (e.code === "KeyI") {
-            // Import: modal
             e.preventDefault();
             openImportModal();
           }
@@ -1000,7 +959,7 @@
         }
       });
 
-      viewSelect.addEventListener("change", function () {
+      viewSelect.addEventListener("change", () => {
         state.currentViewId = viewSelect.value;
         saveState();
         selectedNodeId = null;
@@ -1009,18 +968,18 @@
         render();
       });
 
-      addViewBtn.addEventListener("click", function () {
-        var name = window.prompt("Name for new view/layout:", "");
+      addViewBtn.addEventListener("click", () => {
+        const name = window.prompt("Name for new view/layout:", "");
         if (!name) return;
-        var id =
+        const id =
           "v_" + name.toLowerCase().replace(/[^a-z0-9]+/g, "_") + "_" +
           Math.random().toString(36).slice(2, 6);
 
-        var currentViewId = state.currentViewId;
-        state.views.push({ id: id, name: name });
+        const currentViewId = state.currentViewId;
+        state.views.push({ id, name });
         cloneLayoutToNewView(currentViewId, id);
 
-        var vt = getViewTransform(currentViewId);
+        const vt = getViewTransform(currentViewId);
         state.viewTransforms[id] = {
           scale: vt.scale,
           offsetX: vt.offsetX,
@@ -1035,13 +994,13 @@
         render();
       });
 
-      addNodeBtn.addEventListener("click", function () {
-        var title = nodeTextInput.value;
+      addNodeBtn.addEventListener("click", () => {
+        let title = nodeTextInput.value;
         if (!title || !title.trim()) {
           title = "Event " + state.nextNodeId;
         }
 
-        var node = {
+        const node = {
           id: state.nextNodeId++,
           type: "event",
           title: title,
@@ -1049,8 +1008,8 @@
           positions: {}
         };
 
-        state.views.forEach(function (view, index) {
-          var count = state.nodes.length;
+        state.views.forEach((view, index) => {
+          const count = state.nodes.length;
           node.positions[view.id] = {
             x: 80 + count * 160,
             y: 80 + index * 120
@@ -1065,35 +1024,34 @@
         nodeTextInput.focus();
       });
 
-      nodeTextInput.addEventListener("keydown", function (e) {
+      nodeTextInput.addEventListener("keydown", e => {
         if (e.key === "Enter") {
           e.preventDefault();
           addNodeBtn.click();
         }
       });
 
-      connectModeBtn.addEventListener("click", function () {
+      connectModeBtn.addEventListener("click", () => {
         setConnectMode(!connectMode);
       });
 
-      deleteNodeBtn.addEventListener("click", function () {
+      deleteNodeBtn.addEventListener("click", () => {
         if (!selectedNodeId) return;
         if (window.confirm("Delete selected node and all its edges?")) {
           deleteSelectedNode();
         }
       });
 
-      canvasWrapper.addEventListener("click", function () {
+      canvasWrapper.addEventListener("click", () => {
         selectedNodeId = null;
         pendingFromId = null;
         render();
       });
 
-      // Panning via mouse drag on background
       function onPanMouseMove(e) {
         if (!isPanning || !panInfo) return;
         e.preventDefault();
-        var vt = getViewTransform();
+        const vt = getViewTransform();
         vt.offsetX = panInfo.startOffsetX + (e.clientX - panInfo.startClientX);
         vt.offsetY = panInfo.startOffsetY + (e.clientY - panInfo.startClientY);
         applyViewTransform();
@@ -1109,12 +1067,12 @@
         updateStatusBar();
       }
 
-      canvasWrapper.addEventListener("mousedown", function (e) {
+      canvasWrapper.addEventListener("mousedown", e => {
         if (e.button !== 0) return;
         if (e.target.closest(".node")) return;
         e.preventDefault();
         isPanning = true;
-        var vt = getViewTransform();
+        const vt = getViewTransform();
         panInfo = {
           startClientX: e.clientX,
           startClientY: e.clientY,
@@ -1125,22 +1083,22 @@
         document.addEventListener("mouseup", onPanMouseUp);
       });
 
-      // Wheel: pan by default, zoom only with Ctrl/Cmd
-      canvasWrapper.addEventListener("wheel", function (e) {
+      canvasWrapper.addEventListener("wheel", e => {
         e.preventDefault();
-        var vt = getViewTransform();
+        const vt = getViewTransform();
 
         if (e.ctrlKey || e.metaKey) {
-          var rect = canvasWrapper.getBoundingClientRect();
-          var mouseX = e.clientX - rect.left;
-          var mouseY = e.clientY - rect.top;
-          var worldBefore = screenToWorld(mouseX, mouseY);
+          const rect = canvasWrapper.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+          const worldBefore = screenToWorld(mouseX, mouseY);
 
-          var delta = e.deltaY;
-          var zoomFactor = delta < 0 ? 1.1 : 0.9;
-          var newScale = vt.scale * zoomFactor;
-          var minScale = 0.1;
-          var maxScale = 2.0;
+          const delta = e.deltaY;
+          // half as sensitive zoom: ~5% step instead of ~10%
+          const zoomFactor = delta < 0 ? 1.05 : 0.95;
+          let newScale = vt.scale * zoomFactor;
+          const minScale = 0.1;
+          const maxScale = 2.0;
           if (newScale < minScale) newScale = minScale;
           if (newScale > maxScale) newScale = maxScale;
 
@@ -1160,9 +1118,8 @@
         }
       }, { passive: false });
 
-      // Reset zoom button
-      resetZoomBtn.addEventListener("click", function () {
-        var vt = getViewTransform();
+      resetZoomBtn.addEventListener("click", () => {
+        const vt = getViewTransform();
         vt.scale = 1;
         vt.offsetX = 0;
         vt.offsetY = 0;
@@ -1171,14 +1128,13 @@
         updateStatusBar();
       });
 
-      window.addEventListener("resize", function () {
-        window.requestAnimationFrame(function () {
+      window.addEventListener("resize", () => {
+        window.requestAnimationFrame(() => {
           updateEdges();
           updateGrid();
         });
       });
 
-      // Initial boot
       rebuildViewOptions();
       ensurePositionsForCurrentView();
       saveState();
@@ -1190,49 +1146,45 @@
 
         ensurePositionsForCurrentView();
 
-        state.nodes.forEach(function (node, index) {
-          var pos = node.positions[state.currentViewId];
+        state.nodes.forEach((node, index) => {
+          let pos = node.positions[state.currentViewId];
           if (!pos) {
             pos = { x: 80 + index * 150, y: 80 };
             node.positions[state.currentViewId] = pos;
           }
 
-          var nodeEl = document.createElement("div");
+          const nodeEl = document.createElement("div");
           nodeEl.className = "node";
-          if (node.id === selectedNodeId) {
-            nodeEl.classList.add("selected");
-          }
-          if (node.id === pendingFromId) {
-            nodeEl.classList.add("pending-from");
-          }
+          if (node.id === selectedNodeId) nodeEl.classList.add("selected");
+          if (node.id === pendingFromId) nodeEl.classList.add("pending-from");
 
-          var header = document.createElement("div");
+          const header = document.createElement("div");
           header.className = "node-header";
 
-          var pill = document.createElement("div");
+          const pill = document.createElement("div");
           pill.className = "node-pill";
           pill.textContent = (node.type || "event").toUpperCase();
 
-          var idSpan = document.createElement("span");
+          const idSpan = document.createElement("span");
           idSpan.className = "node-id";
           idSpan.textContent = "#" + node.id;
 
           header.appendChild(pill);
           header.appendChild(idSpan);
 
-          var body = document.createElement("div");
+          const body = document.createElement("div");
           body.className = "node-body";
 
-          var titleText = (node.title && node.title.trim()) ? node.title : "(untitled)";
-          var fullText = node.fulltext || "";
+          const titleText = (node.title && node.title.trim()) ? node.title : "(untitled)";
+          const fullText = node.fulltext || "";
 
-          var titleEl = document.createElement("div");
+          const titleEl = document.createElement("div");
           titleEl.className = "node-title";
           titleEl.textContent = titleText;
 
-          var fullEl = document.createElement("div");
+          const fullEl = document.createElement("div");
           fullEl.className = "node-fulltext";
-          var snippet = fullText.length > 150
+          const snippet = fullText.length > 150
             ? fullText.slice(0, 147) + "…"
             : fullText;
           fullEl.textContent = snippet;

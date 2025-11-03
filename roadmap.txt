@@ -1,0 +1,6 @@
++ pacing type node: player should be here after x minutes (overall playtime ca. 8h)
+
+
+publishing:
++ episodic
+  + could even polish first episode (e.g. 30 minutes) so much that people def get hooked
