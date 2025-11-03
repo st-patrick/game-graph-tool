@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RPG Story / Map Graph Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0b1120;
+      --bg-alt: #020617;
+      --panel: #020617;
+      --panel-border: #111827;
+      --node-bg: #111827;
+      --node-border: #4b5563;
+      --node-selected: #38bdf8;
+      --node-text: #e5e7eb;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.15);
+      --grid: rgba(148, 163, 184, 0.15);
+      --edge: #6b7280;
+      --edge-highlight: #38bdf8;
+      --danger: #ef4444;
+      --text-muted: #9ca3af;
+      --toolbar-height: 52px;
+      --status-height: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
+      color: #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #toolbar {
+      height: var(--toolbar-height);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.75rem;
+      background: linear-gradient(to right, #020617, #020617);
+      border-bottom: 1px solid var(--panel-border);
+      font-size: 0.85rem;
+      flex-wrap: wrap;
+    }
+
+    #toolbar label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    input,
+    select,
+    button {
+      font-family: inherit;
+      font-size: 0.85rem;
+    }
+
+    #nodeTextInput {
+      min-width: 180px;
+      max-width: 260px;
+      padding: 0.3rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid #1f2933;
+      background: #020617;
+      color: #f9fafb;
+    }
+
+    #nodeTextInput:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-soft);
+    }
+
+    select {
+      padding: 0.25rem 1.5rem 0.25rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid #1f2933;
+      background: #020617;
+      color: #f9fafb;
+    }
+
+    button {
+      border-radius: 999px;
+      border: 1px solid #1f2933;
+      background: #020617;
+      color: #f9fafb;
+      padding: 0.3rem 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      white-space: nowrap;
+    }
+
+    button:hover:not(:disabled) {
+      border-color: #4b5563;
+      background: #030712;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .btn-primary {
+      border-color: var(--accent);
+      background: radial-gradient(circle at top left, #16a34a 0, #052e16 60%);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: radial-gradient(circle at top left, #22c55e 0, #052e16 60%);
+    }
+
+    .btn-danger {
+      border-color: rgba(239, 68, 68, 0.45);
+      background: radial-gradient(circle at top left, rgba(239, 68, 68, 0.1) 0, #020617 60%);
+      color: #fecaca;
+    }
+
+    .btn-toggle.active {
+      border-color: var(--node-selected);
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.2) 0, #020617 60%);
+      color: #f0f9ff;
+    }
+
+    .spacer {
+      flex: 1;
+    }
+
+    #canvasWrapper {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+      background: radial-gradient(circle at top, #020617 0, #020617 45%, #020617 100%);
+      cursor: default;
+    }
+
+    #canvasGrid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    #edgesSvg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    #nodesLayer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none; /* individual nodes re-enable this */
+    }
+
+    .node {
+      position: absolute;
+      min-width: 140px;
+      max-width: 260px;
+      padding: 0.35rem 0.55rem;
+      border-radius: 0.75rem;
+      background: radial-gradient(circle at top left, #020617 0, #020617 60%);
+      border: 1px solid var(--node-border);
+      color: var(--node-text);
+      box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+      cursor: grab;
+      user-select: none;
+      pointer-events: auto;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: box-shadow 0.12s ease, border-color 0.12s ease,
+                  transform 0.06s ease;
+    }
+
+    .node:active {
+      cursor: grabbing;
+      transform: scale(1.01);
+    }
+
+    .node.selected {
+      border-color: var(--node-selected);
+      box-shadow:
+        0 0 0 1px rgba(56, 189, 248, 0.9),
+        0 14px 35px rgba(15, 23, 42, 0.9);
+    }
+
+    .node.pending-from {
+      border-style: dashed;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-soft);
+    }
+
+    .node-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.25rem;
+      margin-bottom: 0.2rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    .node-pill {
+      padding: 0.05rem 0.4rem;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.7);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: #9ca3af;
+      white-space: nowrap;
+    }
+
+    .node-id {
+      font-variant-numeric: tabular-nums;
+      opacity: 0.7;
+    }
+
+    .node-body {
+      font-size: 0.8rem;
+      line-height: 1.25;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .edge-line {
+      stroke: var(--edge);
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .edge-line.highlight {
+      stroke: var(--edge-highlight);
+      stroke-width: 2.4;
+    }
+
+    #statusBar {
+      height: var(--status-height);
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      padding: 0 0.75rem;
+      border-top: 1px solid var(--panel-border);
+      background: radial-gradient(circle at top, #020617 0, #020617 40%, #020617 100%);
+      color: var(--text-muted);
+      gap: 1.5rem;
+    }
+
+    #statusBar span {
+      opacity: 0.85;
+    }
+
+    #statusBar strong {
+      font-weight: 500;
+      color: #e5e7eb;
+    }
+
+    #canvasWrapper.connect-mode {
+      cursor: crosshair;
+    }
+
+    #canvasWrapper.connect-mode .node {
+      cursor: crosshair;
+    }
+
+    /* Modal for export/import (hidden unless hotkey is used) */
+
+    #modalOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.76);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+    }
+
+    #modalOverlay.visible {
+      display: flex;
+    }
+
+    #modal {
+      background: #020617;
+      border-radius: 0.75rem;
+      border: 1px solid #1f2937;
+      max-width: 640px;
+      width: min(640px, 100% - 2rem);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.9);
+      padding: 1rem 1rem 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    #modalHeader h2 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    #modalDescription {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    #modalTextarea {
+      width: 100%;
+      min-height: 220px;
+      resize: vertical;
+      border-radius: 0.5rem;
+      border: 1px solid #1f2937;
+      background: #020617;
+      color: #e5e7eb;
+      padding: 0.5rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+      font-size: 0.75rem;
+    }
+
+    #modalButtons {
+      margin-top: 0.5rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      padding-top: 0.25rem;
+      border-top: 1px solid #111827;
+    }
+
+    @media (max-width: 768px) {
+      #toolbar {
+        height: auto;
+      }
+      #nodeTextInput {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <label for="viewSelect">View</label>
+    <select id="viewSelect"></select>
+    <button id="addViewBtn" title="Create a new layout/view based on the current positions">
+      + View
+    </button>
+
+    <span style="width:1px;height:20px;background:#111827;margin:0 0.5rem;"></span>
+
+    <input id="nodeTextInput" type="text" placeholder="New event (optional text)" />
+    <button id="addNodeBtn" class="btn-primary" title="Add a new event node">
+      + Add node
+    </button>
+
+    <button id="connectModeBtn" class="btn-toggle" title="Connect nodes: click source, then target">
+      ⇢ Connect
+    </button>
+
+    <button id="deleteNodeBtn" class="btn-danger" disabled title="Delete selected node">
+      ⌫ Delete node
+    </button>
+
+    <div class="spacer"></div>
+
+    <span id="hintText" style="font-size:0.75rem;color:var(--text-muted);">
+      Drag nodes, double-click text to edit, connect in “Connect” mode.
+    </span>
+  </div>
+
+  <div id="canvasWrapper">
+    <div id="canvasGrid"></div>
+    <svg id="edgesSvg"></svg>
+    <div id="nodesLayer"></div>
+  </div>
+
+  <div id="statusBar">
+    <span id="statusView"></span>
+    <span id="statusCounts"></span>
+    <span id="statusMode"></span>
+  </div>
+
+  <!-- Hidden modal for export/import (triggered via hotkeys only) -->
+  <div id="modalOverlay">
+    <div id="modal">
+      <div id="modalHeader">
+        <h2 id="modalTitle"></h2>
+      </div>
+      <p id="modalDescription"></p>
+      <textarea id="modalTextarea" spellcheck="false"></textarea>
+      <div id="modalButtons">
+        <button id="modalPrimaryBtn" class="btn-primary"></button>
+        <button id="modalSecondaryBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = "rpg_graph_tool_v1";
+
+      function createDefaultState() {
+        const base = {
+          nodes: [],
+          edges: [],
+          views: [
+            { id: "story", name: "Story" },
+            { id: "map", name: "Map" }
+          ],
+          currentViewId: "story",
+          nextNodeId: 1,
+          viewTransforms: {}
+        };
+        base.views.forEach(function (v) {
+          base.viewTransforms[v.id] = { scale: 1, offsetX: 0, offsetY: 0 };
+        });
+        return base;
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return createDefaultState();
+          const parsed = JSON.parse(raw);
+          const defaults = createDefaultState();
+
+          const s = Object.assign({}, defaults, parsed);
+
+          if (!Array.isArray(s.nodes)) s.nodes = [];
+          if (!Array.isArray(s.edges)) s.edges = [];
+          if (!Array.isArray(s.views) || s.views.length === 0) {
+            s.views = defaults.views;
+          }
+          if (!s.currentViewId) {
+            s.currentViewId = s.views[0].id;
+          }
+          if (!s.nextNodeId) {
+            const maxId = s.nodes.reduce(function (max, n) {
+              return typeof n.id === "number" && n.id > max ? n.id : max;
+            }, 0);
+            s.nextNodeId = maxId + 1;
+          }
+          if (!s.viewTransforms || typeof s.viewTransforms !== "object") {
+            s.viewTransforms = {};
+          }
+          s.views.forEach(function (v) {
+            if (!s.viewTransforms[v.id]) {
+              s.viewTransforms[v.id] = { scale: 1, offsetX: 0, offsetY: 0 };
+            }
+          });
+          s.nodes.forEach(function (n) {
+            if (!n.positions || typeof n.positions !== "object") n.positions = {};
+            if (!n.type) n.type = "event";
+            if (typeof n.text !== "string") n.text = "";
+          });
+          return s;
+        } catch (e) {
+          console.error("Failed to load state, resetting:", e);
+          return createDefaultState();
+        }
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {
+          console.error("Failed to save state:", e);
+        }
+      }
+
+      let state = loadState();
+      let selectedNodeId = null;
+      let pendingFromId = null;
+      let connectMode = false;
+      let isDragging = false;
+      let dragInfo = null;
+      let isPanning = false;
+      let panInfo = null;
+      let nodeElementsById = new Map();
+
+      const viewSelect = document.getElementById("viewSelect");
+      const addViewBtn = document.getElementById("addViewBtn");
+      const nodeTextInput = document.getElementById("nodeTextInput");
+      const addNodeBtn = document.getElementById("addNodeBtn");
+      const connectModeBtn = document.getElementById("connectModeBtn");
+      const deleteNodeBtn = document.getElementById("deleteNodeBtn");
+      const canvasWrapper = document.getElementById("canvasWrapper");
+      const nodesLayer = document.getElementById("nodesLayer");
+      const edgesSvg = document.getElementById("edgesSvg");
+      const statusView = document.getElementById("statusView");
+      const statusCounts = document.getElementById("statusCounts");
+      const statusMode = document.getElementById("statusMode");
+      const hintText = document.getElementById("hintText");
+
+      const modalOverlay = document.getElementById("modalOverlay");
+      const modalTitle = document.getElementById("modalTitle");
+      const modalDescription = document.getElementById("modalDescription");
+      const modalTextarea = document.getElementById("modalTextarea");
+      const modalPrimaryBtn = document.getElementById("modalPrimaryBtn");
+      const modalSecondaryBtn = document.getElementById("modalSecondaryBtn");
+      let modalMode = null; // "export" | "import"
+
+      function getViewById(id) {
+        return state.views.find(function (v) { return v.id === id; }) || null;
+      }
+
+      function getNodeById(id) {
+        return state.nodes.find(function (n) { return n.id === id; }) || null;
+      }
+
+      function getViewTransform(viewIdOpt) {
+        const viewId = viewIdOpt || state.currentViewId;
+        if (!state.viewTransforms || typeof state.viewTransforms !== "object") {
+          state.viewTransforms = {};
+        }
+        let vt = state.viewTransforms[viewId];
+        if (!vt) {
+          vt = { scale: 1, offsetX: 0, offsetY: 0 };
+          state.viewTransforms[viewId] = vt;
+        }
+        return vt;
+      }
+
+      function worldToScreen(x, y, viewIdOpt) {
+        const vt = getViewTransform(viewIdOpt);
+        return {
+          x: x * vt.scale + vt.offsetX,
+          y: y * vt.scale + vt.offsetY
+        };
+      }
+
+      function screenToWorld(x, y, viewIdOpt) {
+        const vt = getViewTransform(viewIdOpt);
+        return {
+          x: (x - vt.offsetX) / vt.scale,
+          y: (y - vt.offsetY) / vt.scale
+        };
+      }
+
+      function ensurePositionsForCurrentView() {
+        const viewId = state.currentViewId;
+        state.nodes.forEach(function (node, index) {
+          if (!node.positions) node.positions = {};
+          if (!node.positions[viewId]) {
+            let fallbackPos = null;
+            const viewIds = Object.keys(node.positions);
+            if (viewIds.length > 0) {
+              fallbackPos = node.positions[viewIds[0]];
+            }
+            if (fallbackPos) {
+              node.positions[viewId] = {
+                x: fallbackPos.x + 20,
+                y: fallbackPos.y + 20
+              };
+            } else {
+              node.positions[viewId] = {
+                x: 80 + index * 150,
+                y: 80
+              };
+            }
+          }
+        });
+      }
+
+      function cloneLayoutToNewView(fromViewId, toViewId) {
+        state.nodes.forEach(function (node, index) {
+          if (!node.positions) node.positions = {};
+          const fromPos = node.positions[fromViewId];
+          if (fromPos) {
+            node.positions[toViewId] = { x: fromPos.x, y: fromPos.y };
+          } else {
+            node.positions[toViewId] = {
+              x: 80 + index * 150,
+              y: 80
+            };
+          }
+        });
+      }
+
+      function rebuildViewOptions() {
+        viewSelect.innerHTML = "";
+        state.views.forEach(function (view) {
+          var opt = document.createElement("option");
+          opt.value = view.id;
+          opt.textContent = view.name;
+          viewSelect.appendChild(opt);
+        });
+        if (!getViewById(state.currentViewId)) {
+          state.currentViewId = state.views[0].id;
+        }
+        viewSelect.value = state.currentViewId;
+      }
+
+      function setConnectMode(on) {
+        connectMode = !!on;
+        pendingFromId = null;
+        if (connectMode) {
+          connectModeBtn.classList.add("active");
+          hintText.textContent = "Connect mode: click source node, then target node.";
+          canvasWrapper.classList.add("connect-mode");
+        } else {
+          connectModeBtn.classList.remove("active");
+          hintText.textContent = "Drag nodes, double-click text to edit, connect in “Connect” mode.";
+          canvasWrapper.classList.remove("connect-mode");
+        }
+        updateStatusBar();
+        render();
+      }
+
+      function updateStatusBar() {
+        var view = getViewById(state.currentViewId);
+        var vt = getViewTransform();
+        statusView.innerHTML =
+          "View: <strong>" +
+          (view ? view.name : "Unknown") +
+          "</strong>";
+        statusCounts.textContent =
+          "Nodes: " + state.nodes.length +
+          " | Edges: " + state.edges.length +
+          " | Zoom: " + Math.round(vt.scale * 100) + "%";
+        var modeText = connectMode ? "Connect mode" : "Navigate / drag mode";
+        statusMode.textContent =
+          "Mode: " +
+          modeText +
+          (selectedNodeId ? " | Selected node #" + selectedNodeId : "");
+        deleteNodeBtn.disabled = !selectedNodeId;
+      }
+
+      function createEdge(fromId, toId) {
+        if (!fromId || !toId || fromId === toId) return;
+        var exists = state.edges.some(function (e) {
+          return e.from === fromId && e.to === toId;
+        });
+        if (exists) return;
+        var edgeId =
+          "e_" + fromId + "_" + toId + "_" + Math.random().toString(36).slice(2, 7);
+        state.edges.push({
+          id: edgeId,
+          from: fromId,
+          to: toId,
+          type: "sequence"
+        });
+      }
+
+      function deleteSelectedNode() {
+        if (!selectedNodeId) return;
+        var id = selectedNodeId;
+        state.nodes = state.nodes.filter(function (n) { return n.id !== id; });
+        state.edges = state.edges.filter(function (e) {
+          return e.from !== id && e.to !== id;
+        });
+        selectedNodeId = null;
+        pendingFromId = null;
+        saveState();
+        render();
+      }
+
+      function clearSvg() {
+        while (edgesSvg.firstChild) {
+          edgesSvg.removeChild(edgesSvg.firstChild);
+        }
+      }
+
+      function updateEdges() {
+        clearSvg();
+        if (state.edges.length === 0) return;
+
+        var defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        var marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+        marker.setAttribute("id", "arrowhead");
+        marker.setAttribute("markerWidth", "8");
+        marker.setAttribute("markerHeight", "6");
+        marker.setAttribute("refX", "8");
+        marker.setAttribute("refY", "3");
+        marker.setAttribute("orient", "auto");
+        marker.setAttribute("markerUnits", "strokeWidth");
+
+        var markerPath = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "path"
+        );
+        markerPath.setAttribute("d", "M0,0 L8,3 L0,6 z");
+        markerPath.setAttribute("fill", "currentColor");
+
+        marker.appendChild(markerPath);
+        defs.appendChild(marker);
+        edgesSvg.appendChild(defs);
+
+        state.edges.forEach(function (edge) {
+          var fromEl = nodeElementsById.get(edge.from);
+          var toEl = nodeElementsById.get(edge.to);
+          if (!fromEl || !toEl) return;
+
+          var x1 = fromEl.offsetLeft + fromEl.offsetWidth / 2;
+          var y1 = fromEl.offsetTop + fromEl.offsetHeight / 2;
+          var x2 = toEl.offsetLeft + toEl.offsetWidth / 2;
+          var y2 = toEl.offsetTop + toEl.offsetHeight / 2;
+
+          var line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          line.setAttribute("x1", String(x1));
+          line.setAttribute("y1", String(y1));
+          line.setAttribute("x2", String(x2));
+          line.setAttribute("y2", String(y2));
+          line.setAttribute("class", "edge-line");
+          line.setAttribute(
+            "stroke",
+            getComputedStyle(document.body).getPropertyValue("--edge") || "#6b7280"
+          );
+          line.setAttribute("marker-end", "url(#arrowhead)");
+
+          if (selectedNodeId && (edge.from === selectedNodeId || edge.to === selectedNodeId)) {
+            line.classList.add("highlight");
+            line.setAttribute(
+              "stroke",
+              getComputedStyle(document.body).getPropertyValue("--edge-highlight") || "#38bdf8"
+            );
+          }
+
+          edgesSvg.appendChild(line);
+        });
+      }
+
+      function positionNodeElement(node) {
+        var pos = node.positions[state.currentViewId];
+        if (!pos) return;
+        var el = nodeElementsById.get(node.id);
+        if (!el) return;
+        var screen = worldToScreen(pos.x, pos.y);
+        el.style.left = screen.x + "px";
+        el.style.top = screen.y + "px";
+      }
+
+      function updateAllNodeScreenPositions() {
+        state.nodes.forEach(function (node) {
+          positionNodeElement(node);
+        });
+      }
+
+      function attachNodeEvents(nodeElement, node) {
+        nodeElement.addEventListener("mousedown", function (e) {
+          if (e.button !== 0) return;
+          e.preventDefault();
+          e.stopPropagation();
+
+          isDragging = true;
+          selectedNodeId = node.id;
+          deleteNodeBtn.disabled = false;
+
+          var pos = node.positions[state.currentViewId];
+          dragInfo = {
+            nodeId: node.id,
+            startClientX: e.clientX,
+            startClientY: e.clientY,
+            startWorldX: pos ? pos.x : 0,
+            startWorldY: pos ? pos.y : 0
+          };
+
+          document.addEventListener("mousemove", onMouseMove);
+          document.addEventListener("mouseup", onMouseUp);
+          updateStatusBar();
+        });
+
+        nodeElement.addEventListener("click", function (e) {
+          e.stopPropagation();
+          handleNodePrimaryClick(node);
+        });
+
+        nodeElement.addEventListener("dblclick", function (e) {
+          e.stopPropagation();
+          var newText = window.prompt("Edit node text:", node.text || "");
+          if (newText !== null) {
+            node.text = newText;
+            saveState();
+            render();
+          }
+        });
+
+        nodeElement.addEventListener("contextmenu", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          selectedNodeId = node.id;
+          if (window.confirm("Delete node #" + node.id + " and its edges?")) {
+            deleteSelectedNode();
+          } else {
+            render();
+          }
+        });
+      }
+
+      function onMouseMove(e) {
+        if (!isDragging || !dragInfo) return;
+        e.preventDefault();
+        var node = getNodeById(dragInfo.nodeId);
+        if (!node) return;
+        var pos = node.positions[state.currentViewId];
+        if (!pos) {
+          pos = { x: 0, y: 0 };
+          node.positions[state.currentViewId] = pos;
+        }
+        var vt = getViewTransform();
+        var dxScreen = e.clientX - dragInfo.startClientX;
+        var dyScreen = e.clientY - dragInfo.startClientY;
+        var newX = dragInfo.startWorldX + dxScreen / vt.scale;
+        var newY = dragInfo.startWorldY + dyScreen / vt.scale;
+
+        if (newX < 0) newX = 0;
+        if (newY < 0) newY = 0;
+
+        pos.x = newX;
+        pos.y = newY;
+
+        positionNodeElement(node);
+        updateEdges();
+      }
+
+      function onMouseUp(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        dragInfo = null;
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        saveState();
+      }
+
+      function handleNodePrimaryClick(node) {
+        if (connectMode) {
+          if (!pendingFromId) {
+            pendingFromId = node.id;
+            selectedNodeId = node.id;
+          } else {
+            if (pendingFromId !== node.id) {
+              createEdge(pendingFromId, node.id);
+              saveState();
+            }
+            selectedNodeId = node.id;
+            pendingFromId = null;
+          }
+        } else {
+          selectedNodeId = node.id;
+          pendingFromId = null;
+        }
+        render();
+      }
+
+      function openModal(mode) {
+        modalMode = mode;
+        if (mode === "export") {
+          modalTitle.textContent = "Export data";
+          modalDescription.textContent =
+            "Copy this JSON somewhere safe. On another device, use the import shortcut to restore.";
+          modalPrimaryBtn.textContent = "Copy to clipboard";
+          modalTextarea.value = JSON.stringify(state, null, 2);
+          setTimeout(function () {
+            modalTextarea.focus();
+            modalTextarea.select();
+          }, 0);
+        } else if (mode === "import") {
+          modalTitle.textContent = "Import data";
+          modalDescription.textContent =
+            "Paste previously exported JSON and click Import. This will overwrite current data.";
+          modalPrimaryBtn.textContent = "Import";
+          modalTextarea.value = "";
+          setTimeout(function () {
+            modalTextarea.focus();
+          }, 0);
+        }
+        modalOverlay.classList.add("visible");
+      }
+
+      function closeModal() {
+        modalOverlay.classList.remove("visible");
+        modalMode = null;
+        modalTextarea.value = "";
+      }
+
+      modalSecondaryBtn.addEventListener("click", function () {
+        closeModal();
+      });
+
+      modalOverlay.addEventListener("click", function (e) {
+        if (e.target === modalOverlay) {
+          closeModal();
+        }
+      });
+
+      modalPrimaryBtn.addEventListener("click", function () {
+        if (modalMode === "export") {
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(modalTextarea.value).catch(function (err) {
+              console.warn("Clipboard copy failed", err);
+            });
+          } else {
+            modalTextarea.select();
+          }
+          closeModal();
+        } else if (modalMode === "import") {
+          var text = modalTextarea.value.trim();
+          if (!text) {
+            alert("Paste some JSON first.");
+            return;
+          }
+          try {
+            JSON.parse(text);
+          } catch (e) {
+            alert("Invalid JSON: " + e.message);
+            return;
+          }
+          try {
+            localStorage.setItem(STORAGE_KEY, text);
+            state = loadState();
+            selectedNodeId = null;
+            pendingFromId = null;
+            nodeElementsById.clear();
+            rebuildViewOptions();
+            ensurePositionsForCurrentView();
+            saveState();
+            render();
+            closeModal();
+          } catch (e) {
+            alert("Import failed: " + e.message);
+          }
+        }
+      });
+
+      window.addEventListener("keydown", function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          var tag = (e.target && e.target.tagName) || "";
+          if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+          if (e.code === "KeyE") {
+            e.preventDefault();
+            openModal("export");
+          } else if (e.code === "KeyI") {
+            e.preventDefault();
+            openModal("import");
+          }
+        } else if (e.key === "Escape" && modalOverlay.classList.contains("visible")) {
+          e.preventDefault();
+          closeModal();
+        }
+      });
+
+      viewSelect.addEventListener("change", function () {
+        state.currentViewId = viewSelect.value;
+        saveState();
+        selectedNodeId = null;
+        pendingFromId = null;
+        ensurePositionsForCurrentView();
+        render();
+      });
+
+      addViewBtn.addEventListener("click", function () {
+        var name = window.prompt("Name for new view/layout:", "");
+        if (!name) return;
+        var id =
+          "v_" + name.toLowerCase().replace(/[^a-z0-9]+/g, "_") + "_" +
+          Math.random().toString(36).slice(2, 6);
+
+        var currentViewId = state.currentViewId;
+        state.views.push({ id: id, name: name });
+        cloneLayoutToNewView(currentViewId, id);
+
+        // clone current view transform into the new view
+        var vt = getViewTransform(currentViewId);
+        state.viewTransforms[id] = {
+          scale: vt.scale,
+          offsetX: vt.offsetX,
+          offsetY: vt.offsetY
+        };
+
+        state.currentViewId = id;
+        saveState();
+        rebuildViewOptions();
+        selectedNodeId = null;
+        pendingFromId = null;
+        render();
+      });
+
+      addNodeBtn.addEventListener("click", function () {
+        var text = nodeTextInput.value;
+        if (!text || !text.trim()) {
+          text = "Event " + state.nextNodeId;
+        } else {
+          text = text;
+        }
+
+        var node = {
+          id: state.nextNodeId++,
+          type: "event",
+          text: text,
+          positions: {}
+        };
+
+        state.views.forEach(function (view, index) {
+          var count = state.nodes.length;
+          node.positions[view.id] = {
+            x: 80 + count * 160,
+            y: 80 + index * 120
+          };
+        });
+
+        state.nodes.push(node);
+        selectedNodeId = node.id;
+        saveState();
+        nodeTextInput.value = "";
+        render();
+        nodeTextInput.focus();
+      });
+
+      nodeTextInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addNodeBtn.click();
+        }
+      });
+
+      connectModeBtn.addEventListener("click", function () {
+        setConnectMode(!connectMode);
+      });
+
+      deleteNodeBtn.addEventListener("click", function () {
+        if (!selectedNodeId) return;
+        if (window.confirm("Delete selected node and all its edges?")) {
+          deleteSelectedNode();
+        }
+      });
+
+      canvasWrapper.addEventListener("click", function () {
+        selectedNodeId = null;
+        pendingFromId = null;
+        render();
+      });
+
+      // Panning
+      function onPanMouseMove(e) {
+        if (!isPanning || !panInfo) return;
+        e.preventDefault();
+        var vt = getViewTransform();
+        vt.offsetX = panInfo.startOffsetX + (e.clientX - panInfo.startClientX);
+        vt.offsetY = panInfo.startOffsetY + (e.clientY - panInfo.startClientY);
+        updateAllNodeScreenPositions();
+        updateEdges();
+      }
+
+      function onPanMouseUp(e) {
+        if (!isPanning) return;
+        isPanning = false;
+        panInfo = null;
+        document.removeEventListener("mousemove", onPanMouseMove);
+        document.removeEventListener("mouseup", onPanMouseUp);
+        saveState();
+        updateStatusBar();
+      }
+
+      canvasWrapper.addEventListener("mousedown", function (e) {
+        if (e.button !== 0) return;
+        if (e.target.closest(".node")) return; // node dragging handled separately
+        e.preventDefault();
+        isPanning = true;
+        var vt = getViewTransform();
+        panInfo = {
+          startClientX: e.clientX,
+          startClientY: e.clientY,
+          startOffsetX: vt.offsetX,
+          startOffsetY: vt.offsetY
+        };
+        document.addEventListener("mousemove", onPanMouseMove);
+        document.addEventListener("mouseup", onPanMouseUp);
+      });
+
+      // Zoom (wheel)
+      canvasWrapper.addEventListener("wheel", function (e) {
+        e.preventDefault();
+        var rect = canvasWrapper.getBoundingClientRect();
+        var mouseX = e.clientX - rect.left;
+        var mouseY = e.clientY - rect.top;
+        var vt = getViewTransform();
+        var worldBefore = screenToWorld(mouseX, mouseY);
+
+        var delta = e.deltaY;
+        var zoomFactor = delta < 0 ? 1.1 : 0.9;
+        var newScale = vt.scale * zoomFactor;
+        var minScale = 0.25;
+        var maxScale = 6;
+        if (newScale < minScale) newScale = minScale;
+        if (newScale > maxScale) newScale = maxScale;
+
+        vt.scale = newScale;
+        vt.offsetX = mouseX - worldBefore.x * newScale;
+        vt.offsetY = mouseY - worldBefore.y * newScale;
+
+        updateAllNodeScreenPositions();
+        updateEdges();
+        saveState();
+        updateStatusBar();
+      }, { passive: false });
+
+      window.addEventListener("resize", function () {
+        window.requestAnimationFrame(function () {
+          updateAllNodeScreenPositions();
+          updateEdges();
+        });
+      });
+
+      // --- Initial boot ---
+      rebuildViewOptions();
+      ensurePositionsForCurrentView();
+      saveState();
+      render();
+
+      function render() {
+        nodeElementsById.clear();
+        nodesLayer.innerHTML = "";
+
+        ensurePositionsForCurrentView();
+
+        state.nodes.forEach(function (node, index) {
+          var pos = node.positions[state.currentViewId];
+          if (!pos) {
+            pos = { x: 80 + index * 150, y: 80 };
+            node.positions[state.currentViewId] = pos;
+          }
+
+          var nodeEl = document.createElement("div");
+          nodeEl.className = "node";
+          if (node.id === selectedNodeId) {
+            nodeEl.classList.add("selected");
+          }
+          if (node.id === pendingFromId) {
+            nodeEl.classList.add("pending-from");
+          }
+
+          var header = document.createElement("div");
+          header.className = "node-header";
+
+          var pill = document.createElement("div");
+          pill.className = "node-pill";
+          pill.textContent = (node.type || "event").toUpperCase();
+
+          var idSpan = document.createElement("span");
+          idSpan.className = "node-id";
+          idSpan.textContent = "#" + node.id;
+
+          header.appendChild(pill);
+          header.appendChild(idSpan);
+
+          var body = document.createElement("div");
+          body.className = "node-body";
+          var fullText = node.text || "(empty event)";
+          var snippet = fullText.length > 150
+            ? fullText.slice(0, 147) + "…"
+            : fullText;
+          body.textContent = snippet;
+
+          nodeEl.appendChild(header);
+          nodeEl.appendChild(body);
+          nodeEl.title = fullText;
+
+          nodesLayer.appendChild(nodeEl);
+
+          nodeElementsById.set(node.id, nodeEl);
+          attachNodeEvents(nodeEl, node);
+          positionNodeElement(node);
+        });
+
+        window.requestAnimationFrame(updateEdges);
+        updateStatusBar();
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+{
+  "nodes": [
+    {
+      "id": 1,
+      "type": "event",
+      "text": "The dark dream",
+      "positions": {
+        "story": {
+          "x": 152,
+          "y": 110
+        },
+        "map": {
+          "x": 193,
+          "y": 163
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "event",
+      "text": "Waking up",
+      "positions": {
+        "story": {
+          "x": 302,
+          "y": 110
+        },
+        "map": {
+          "x": 307,
+          "y": 163
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "event",
+      "text": "looking around the house",
+      "positions": {
+        "story": {
+          "x": 449,
+          "y": 110
+        },
+        "map": {
+          "x": 354,
+          "y": 216
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "event",
+      "text": "back to sleep",
+      "positions": {
+        "story": {
+          "x": 628,
+          "y": 111
+        },
+        "map": {
+          "x": 192,
+          "y": 215
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "event",
+      "text": "waking up in the morning",
+      "positions": {
+        "story": {
+          "x": 777,
+          "y": 111
+        },
+        "map": {
+          "x": 193,
+          "y": 271
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "event",
+      "text": "discovery of the town: learning some basic mechanics",
+      "positions": {
+        "story": {
+          "x": 771,
+          "y": 239
+        },
+        "map": {
+          "x": 851,
+          "y": 653
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "event",
+      "text": "the bar: your first step to main quest",
+      "positions": {
+        "story": {
+          "x": 612,
+          "y": 375
+        },
+        "map": {
+          "x": 612.4559118002554,
+          "y": 1165.0747359287777
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_2_1_luwj6",
+      "from": 2,
+      "to": 1,
+      "type": "sequence"
+    },
+    {
+      "id": "e_1_2_8gxsh",
+      "from": 1,
+      "to": 2,
+      "type": "sequence"
+    },
+    {
+      "id": "e_2_3_zhsxv",
+      "from": 2,
+      "to": 3,
+      "type": "sequence"
+    },
+    {
+      "id": "e_3_4_uwsxf",
+      "from": 3,
+      "to": 4,
+      "type": "sequence"
+    },
+    {
+      "id": "e_3_2_72s31",
+      "from": 3,
+      "to": 2,
+      "type": "sequence"
+    },
+    {
+      "id": "e_4_5_pf27f",
+      "from": 4,
+      "to": 5,
+      "type": "sequence"
+    },
+    {
+      "id": "e_5_6_zai98",
+      "from": 5,
+      "to": 6,
+      "type": "sequence"
+    },
+    {
+      "id": "e_6_7_9a61j",
+      "from": 6,
+      "to": 7,
+      "type": "sequence"
+    }
+  ],
+  "views": [
+    {
+      "id": "story",
+      "name": "Story"
+    },
+    {
+      "id": "map",
+      "name": "Map"
+    }
+  ],
+  "currentViewId": "story",
+  "nextNodeId": 8,
+  "viewTransforms": {
+    "story": {
+      "scale": 1.0305675474093552,
+      "offsetX": -76.83510020602495,
+      "offsetY": -45.193321080137
+    },
+    "map": {
+      "scale": 0.5894869227500005,
+      "offsetX": 200.27041739183687,
+      "offsetY": -54.439200512828734
+    }
+  }
+}
