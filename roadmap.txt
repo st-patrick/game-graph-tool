@@ -1,4 +1,6 @@
 + pacing type node: player should be here after x minutes (overall playtime ca. 8h)
++ emotion type node
++ story type node: catharsis, plot twist, character backstory, ...
 
 
 publishing:
