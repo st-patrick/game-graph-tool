@@ -1,0 +1,669 @@
+{
+  "nodes": [
+    {
+      "id": 1,
+      "type": "event",
+      "text": "The dark dream",
+      "positions": {
+        "story": {
+          "x": 235.86085285109925,
+          "y": -175.8355829572679
+        },
+        "map": {
+          "x": 193,
+          "y": 163
+        }
+      },
+      "title": "The dark dream",
+      "fulltext": ""
+    },
+    {
+      "id": 2,
+      "type": "event",
+      "text": "Waking up",
+      "positions": {
+        "story": {
+          "x": 237.03736750971183,
+          "y": -112.05408923953041
+        },
+        "map": {
+          "x": 307,
+          "y": 163
+        }
+      },
+      "title": "Waking up",
+      "fulltext": ""
+    },
+    {
+      "id": 3,
+      "type": "event",
+      "text": "looking around the house",
+      "positions": {
+        "story": {
+          "x": 237.57615971342582,
+          "y": -47.09145674924227
+        },
+        "map": {
+          "x": 354,
+          "y": 216
+        }
+      },
+      "title": "looking around the house",
+      "fulltext": ""
+    },
+    {
+      "id": 4,
+      "type": "event",
+      "text": "back to sleep",
+      "positions": {
+        "story": {
+          "x": 240.4996499680683,
+          "y": 21.414592058697977
+        },
+        "map": {
+          "x": 192,
+          "y": 215
+        }
+      },
+      "title": "back to sleep",
+      "fulltext": ""
+    },
+    {
+      "id": 5,
+      "type": "event",
+      "text": "waking up in the morning",
+      "positions": {
+        "story": {
+          "x": 237.21958094433296,
+          "y": 85.01494700388474
+        },
+        "map": {
+          "x": 193,
+          "y": 271
+        }
+      },
+      "title": "waking up in the morning",
+      "fulltext": ""
+    },
+    {
+      "id": 6,
+      "type": "event",
+      "text": "discovery of the town: learning some basic mechanics",
+      "positions": {
+        "story": {
+          "x": 734,
+          "y": 204
+        },
+        "map": {
+          "x": 851,
+          "y": 653
+        }
+      },
+      "title": "discovery of the town: learning some basic mechanics",
+      "fulltext": ""
+    },
+    {
+      "id": 7,
+      "type": "event",
+      "text": "the bar: your first step to main quest",
+      "positions": {
+        "story": {
+          "x": 1047.8758037030912,
+          "y": 239.5310490742272
+        },
+        "map": {
+          "x": 612.4559118002554,
+          "y": 1165.0747359287777
+        }
+      },
+      "title": "the bar: your first step to main quest",
+      "fulltext": ""
+    },
+    {
+      "id": 8,
+      "type": "event",
+      "text": "talk to the barkeeper: blabla magical lamy stone blabla",
+      "positions": {
+        "story": {
+          "x": 1047,
+          "y": 306
+        },
+        "map": {
+          "x": 441.7134583499976,
+          "y": 1073.6410938473182
+        }
+      },
+      "title": "talk to the barkeeper: blabla magical lamy stone blabla",
+      "fulltext": ""
+    },
+    {
+      "id": 9,
+      "type": "event",
+      "text": "Talking to your friend / brother / whatever",
+      "positions": {
+        "story": {
+          "x": 736,
+          "y": 336
+        },
+        "map": {
+          "x": 932.746320015511,
+          "y": 158.19876091443697
+        }
+      },
+      "title": "Talking to your friend / brother / whatever",
+      "fulltext": "Hey bro, whazzup. I am so hangover from Dorffest. A legend? What are you talking about, nothing ever happens in this town"
+    },
+    {
+      "id": 11,
+      "type": "event",
+      "title": "leaving town",
+      "fulltext": "for the first time (south road)",
+      "positions": {
+        "story": {
+          "x": 1726.2803890863715,
+          "y": 251.5121462643935
+        },
+        "map": {
+          "x": 871.64427782915,
+          "y": 1757.6732773713222
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "event",
+      "title": "placeholder TOWN",
+      "fulltext": "things happening that lead to the hero leaving town for the first time",
+      "positions": {
+        "story": {
+          "x": 1273.850826218637,
+          "y": -34.67741377356134
+        },
+        "map": {
+          "x": 833.1578932401596,
+          "y": 1289.397510358679
+        }
+      }
+    },
+    {
+      "id": 13,
+      "type": "event",
+      "title": "adventure awaits",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 2123.227311335943,
+          "y": 354.2835112679686
+        },
+        "map": {
+          "x": 656.0836676705619,
+          "y": 2926.1355572850607
+        }
+      }
+    },
+    {
+      "id": 14,
+      "type": "event",
+      "title": "the bridge",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 2313.8832307558073,
+          "y": 404.4848991118539
+        },
+        "map": {
+          "x": 1052.0977626431147,
+          "y": 3528.307651922514
+        }
+      }
+    },
+    {
+      "id": 15,
+      "type": "event",
+      "title": "merchant city",
+      "fulltext": "a bustling town full of danger, stories, rumors and intrigue",
+      "positions": {
+        "story": {
+          "x": 2566.968347205228,
+          "y": 557.7757906978601
+        },
+        "map": {
+          "x": 4172.004781474439,
+          "y": 3766.380909114183
+        }
+      }
+    },
+    {
+      "id": 16,
+      "type": "event",
+      "title": "intrigue deceit ",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 3035.4159771372388,
+          "y": 564.6601727182531
+        },
+        "map": {
+          "x": 4409.143349180232,
+          "y": 3470.7160260431156
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "event",
+      "title": "placeholder BUSTLING CITY and THE WAY BACK",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 3019.6013305839087,
+          "y": 277.09663139842394
+        },
+        "map": {
+          "x": 2610.26073178744,
+          "y": 1698.0073898163537
+        }
+      }
+    },
+    {
+      "id": 18,
+      "type": "event",
+      "title": "the swamp",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 3807.8836908479407,
+          "y": 320.539375042992
+        },
+        "map": {
+          "x": 1428.157232399315,
+          "y": -614.958109356191
+        }
+      }
+    },
+    {
+      "id": 19,
+      "type": "event",
+      "title": "intro and buildup",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 1150.44993245636,
+          "y": -274.5761827430254
+        },
+        "map": {
+          "x": 1012.418840483445,
+          "y": 580.075555178417
+        }
+      }
+    },
+    {
+      "id": 20,
+      "type": "event",
+      "title": "tension and first climax",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 2873.668407679959,
+          "y": 693.5709597031483
+        },
+        "map": {
+          "x": 3974.5197721555487,
+          "y": 3886.0145199389062
+        }
+      }
+    },
+    {
+      "id": 21,
+      "type": "event",
+      "title": "breather",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 4072.015792052036,
+          "y": 645.9054883359572
+        },
+        "map": {
+          "x": 1096.8759309426096,
+          "y": -442.04694556043427
+        }
+      }
+    },
+    {
+      "id": 22,
+      "type": "event",
+      "title": "back home",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 4321.6742371949795,
+          "y": 445.64783532082225
+        },
+        "map": {
+          "x": 539.3027753122387,
+          "y": -19.19048316558343
+        }
+      }
+    },
+    {
+      "id": 23,
+      "type": "event",
+      "title": "the mountain",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 4811.714185660367,
+          "y": 437.6334935303827
+        },
+        "map": {
+          "x": -973.1587710510057,
+          "y": -11.995391993203015
+        }
+      }
+    },
+    {
+      "id": 24,
+      "type": "event",
+      "title": "tension buildup 2",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 4528.655424563284,
+          "y": 678.8818100699364
+        },
+        "map": {
+          "x": -415.50277403702063,
+          "y": 144.78976971064628
+        }
+      }
+    },
+    {
+      "id": 25,
+      "type": "event",
+      "title": "ancient lamy and beyond",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 5145.617096544822,
+          "y": 501.6429904967657
+        },
+        "map": {
+          "x": -2410.3120955529103,
+          "y": -260.79910955821697
+        }
+      }
+    },
+    {
+      "id": 26,
+      "type": "event",
+      "title": "showdown",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 4852.008080076659,
+          "y": 592.6682111927181
+        },
+        "map": {
+          "x": -975.0366411136974,
+          "y": 138.1822764082384
+        }
+      }
+    },
+    {
+      "id": 27,
+      "type": "event",
+      "title": "peace, awe and cliffhanger",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 5363.087337072763,
+          "y": 596.8291712127693
+        },
+        "map": {
+          "x": -2473.5915434481335,
+          "y": 19.88389918895882
+        }
+      }
+    },
+    {
+      "id": 28,
+      "type": "event",
+      "title": "teasing the gem and magical powers deep inside the mountain",
+      "fulltext": "",
+      "positions": {
+        "story": {
+          "x": 4474.250570018994,
+          "y": 148.72308142135688
+        },
+        "map": {
+          "x": 438.32813215446544,
+          "y": -110.77033521935826
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_2_1_luwj6",
+      "from": 2,
+      "to": 1,
+      "type": "sequence"
+    },
+    {
+      "id": "e_1_2_8gxsh",
+      "from": 1,
+      "to": 2,
+      "type": "sequence"
+    },
+    {
+      "id": "e_2_3_zhsxv",
+      "from": 2,
+      "to": 3,
+      "type": "sequence"
+    },
+    {
+      "id": "e_3_4_uwsxf",
+      "from": 3,
+      "to": 4,
+      "type": "sequence"
+    },
+    {
+      "id": "e_3_2_72s31",
+      "from": 3,
+      "to": 2,
+      "type": "sequence"
+    },
+    {
+      "id": "e_4_5_pf27f",
+      "from": 4,
+      "to": 5,
+      "type": "sequence"
+    },
+    {
+      "id": "e_5_6_zai98",
+      "from": 5,
+      "to": 6,
+      "type": "sequence"
+    },
+    {
+      "id": "e_6_7_9a61j",
+      "from": 6,
+      "to": 7,
+      "type": "sequence"
+    },
+    {
+      "id": "e_7_8_m2lnb",
+      "from": 7,
+      "to": 8,
+      "type": "sequence"
+    },
+    {
+      "id": "e_8_9_bbbfl",
+      "from": 8,
+      "to": 9,
+      "type": "sequence"
+    },
+    {
+      "id": "e_9_8_jehzj",
+      "from": 9,
+      "to": 8,
+      "type": "sequence"
+    },
+    {
+      "id": "e_6_12_2olae",
+      "from": 6,
+      "to": 12,
+      "type": "sequence"
+    },
+    {
+      "id": "e_12_11_8t50q",
+      "from": 12,
+      "to": 11,
+      "type": "sequence"
+    },
+    {
+      "id": "e_11_13_ovhlg",
+      "from": 11,
+      "to": 13,
+      "type": "sequence"
+    },
+    {
+      "id": "e_13_14_wacjf",
+      "from": 13,
+      "to": 14,
+      "type": "sequence"
+    },
+    {
+      "id": "e_14_15_5p1p7",
+      "from": 14,
+      "to": 15,
+      "type": "sequence"
+    },
+    {
+      "id": "e_16_15_zjuzb",
+      "from": 16,
+      "to": 15,
+      "type": "sequence"
+    },
+    {
+      "id": "e_17_18_t52xf",
+      "from": 17,
+      "to": 18,
+      "type": "sequence"
+    },
+    {
+      "id": "e_18_17_cx94r",
+      "from": 18,
+      "to": 17,
+      "type": "sequence"
+    },
+    {
+      "id": "e_18_16_kzvow",
+      "from": 18,
+      "to": 16,
+      "type": "sequence"
+    },
+    {
+      "id": "e_17_15_7mcj0",
+      "from": 17,
+      "to": 15,
+      "type": "sequence"
+    },
+    {
+      "id": "e_18_22_tvb4l",
+      "from": 18,
+      "to": 22,
+      "type": "sequence"
+    },
+    {
+      "id": "e_22_23_uv9tz",
+      "from": 22,
+      "to": 23,
+      "type": "sequence"
+    },
+    {
+      "id": "e_21_24_fidfv",
+      "from": 21,
+      "to": 24,
+      "type": "sequence"
+    },
+    {
+      "id": "e_23_25_quqoi",
+      "from": 23,
+      "to": 25,
+      "type": "sequence"
+    },
+    {
+      "id": "e_27_25_c34sj",
+      "from": 27,
+      "to": 25,
+      "type": "sequence"
+    },
+    {
+      "id": "e_26_23_bbsf8",
+      "from": 26,
+      "to": 23,
+      "type": "sequence"
+    },
+    {
+      "id": "e_24_23_etuv1",
+      "from": 24,
+      "to": 23,
+      "type": "sequence"
+    },
+    {
+      "id": "e_24_22_y8nud",
+      "from": 24,
+      "to": 22,
+      "type": "sequence"
+    },
+    {
+      "id": "e_21_18_8sqni",
+      "from": 21,
+      "to": 18,
+      "type": "sequence"
+    },
+    {
+      "id": "e_21_22_tjppa",
+      "from": 21,
+      "to": 22,
+      "type": "sequence"
+    },
+    {
+      "id": "e_22_28_vowub",
+      "from": 22,
+      "to": 28,
+      "type": "sequence"
+    },
+    {
+      "id": "e_28_23_abkun",
+      "from": 28,
+      "to": 23,
+      "type": "sequence"
+    }
+  ],
+  "views": [
+    {
+      "id": "story",
+      "name": "Story"
+    },
+    {
+      "id": "map",
+      "name": "Map"
+    }
+  ],
+  "currentViewId": "map",
+  "nextNodeId": 30,
+  "viewTransforms": {
+    "story": {
+      "scale": 0.2975531426921204,
+      "offsetX": -530.6805169441259,
+      "offsetY": 241.2707600519821
+    },
+    "map": {
+      "scale": 0.13975956128009723,
+      "offsetX": 522.2085310314706,
+      "offsetY": 158.5185244653353
+    }
+  }
+}
